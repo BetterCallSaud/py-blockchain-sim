@@ -8,7 +8,6 @@
 import hashlib                 # hashlib for hashing algorithms
 import datetime as date        # datetime for dates
 import random                  # random for randomizing numbers for transactions 
-# import math                    # math for logarithmic function used in merkle root hashing function              
 
 class Block():
     """
@@ -26,26 +25,55 @@ class Block():
         self.hash = self.hash_block()
         self.transactions = txs
         self.tx_ctr = len(txs)
-        # self.merkle = self.merkel_root_hash(self.tx_ctr)
-
+        self.merkle = self.merkle_root_hash(self.transactions)
+    #-------------------------------------------------------------------------------------
+    """
+    Both functions generate hash using SHA-256 algorithm
+    """
+    def hashing(self, s):
+        s = s.encode()
+        sha = hashlib.sha256(s).hexdigest()
+        return sha
+    #-------------------------------------------------------------------------------------
+    """
+    Creates hash for the block
+    """
     def hash_block(self):
-        msg = (str(self.height) + str(self.timestamp) + str(self.prev_hash)).encode()
-        sha = hashlib.sha256(msg)
-        return sha.hexdigest()
+        s = str(self.height) + str(self.timestamp) + str(self.prev_hash)
+        return self.hashing(s)
+    #-------------------------------------------------------------------------------------
+    """
+    Generates Merkle Root Hash for all transactions
+    """
+    def merkle_root_hash(self, txs):
+        if (len(txs) == 1):
+            return txs[0]
+        newtxs = []
+        for i in range(0, len(txs)-1, 2):
+            newtxs.append(self.hashing(str(txs[i]) + str(txs[i+1])))
+        if len(txs)%2 == 1:
+            newtxs.append(self.hashing(str(txs[-1]) + str(txs[-1])))
+        return self.merkle_root_hash(newtxs)
+    
 
-    # def merkel_root_hash():
-    #     pass
-
+"""
+Creates the genesis block, i.e. the first block of the blockchain
+"""
 def create_genesis_block():
     # Manually construct a block with height zero and arbitrary previous hash
     return Block(0, date.datetime.now(), "0", [random.randint(1,1000) for _ in range(10)])
 
+
+"""
+Defines properties for the next block in the blockchain
+"""
 def next_block(last_block):
     this_height = last_block.height + 1
     this_timestamp = date.datetime.now()
     this_hash = last_block.hash
     this_txs = [random.randint(1,1000) for _ in range(10)]
     return Block(this_height, this_timestamp, this_hash, this_txs)
+
 
 if __name__=="__main__":
     
@@ -72,5 +100,6 @@ if __name__=="__main__":
             (f"| Previous Root Hash: {block_to_add.prev_hash}"),
             (f"| Transactions: {block_to_add.transactions}"),
             (f"| Transaction Counter: {block_to_add.tx_ctr}"),
-            ("\t\t{}\n".format("_"*100))
+            (f"| Merkle Root Hash: {block_to_add.merkle}"),
+            ("\t\t{}".format("_"*100))
         )
